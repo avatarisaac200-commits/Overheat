@@ -1,0 +1,5 @@
+{
+  "name": "Overheat: Retro Arcade",
+  "description": "An 8-bit retro arcade shooter with a unique overheat mechanic. Dodge falling platforms, blast red invaders, and manage your trigger finger to prevent catastrophic explosion!",
+  "requestFramePermissions": []
+}
