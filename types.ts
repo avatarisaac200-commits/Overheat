@@ -9,7 +9,7 @@ export enum GameState {
   VICTORY = 'VICTORY'
 }
 
-export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'cluster';
+export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'cluster' | 'mini';
 
 export interface GameObject {
   x: number;
@@ -32,6 +32,7 @@ export interface Enemy extends GameObject {
   shootTimer?: number;
   isDiving?: boolean;
   phase?: number;
+  sineOffset?: number;
 }
 
 export interface Platform extends GameObject {}
