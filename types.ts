@@ -1,12 +1,15 @@
 
 export enum GameState {
   START = 'START',
+  LEVEL_SELECT = 'LEVEL_SELECT',
+  NARRATIVE = 'NARRATIVE',
   PLAYING = 'PLAYING',
   PAUSED = 'PAUSED',
-  GAMEOVER = 'GAMEOVER'
+  GAMEOVER = 'GAMEOVER',
+  VICTORY = 'VICTORY'
 }
 
-export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss';
+export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'cluster';
 
 export interface GameObject {
   x: number;
@@ -19,6 +22,7 @@ export interface GameObject {
 
 export interface Bullet extends GameObject {
   owner: 'player' | 'enemy';
+  isHoming?: boolean;
 }
 
 export interface Enemy extends GameObject {
@@ -27,6 +31,7 @@ export interface Enemy extends GameObject {
   maxHp: number;
   shootTimer?: number;
   isDiving?: boolean;
+  phase?: number;
 }
 
 export interface Platform extends GameObject {}

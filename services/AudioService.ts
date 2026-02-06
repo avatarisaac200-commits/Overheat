@@ -1,3 +1,4 @@
+
 class AudioService {
   private ctx: AudioContext | null = null;
 
@@ -7,33 +8,26 @@ class AudioService {
     }
   }
 
-  private playTone(
-    freq: number,
-    type: OscillatorType,
-    duration: number,
-    volume: number = 0.1,
-    ramp: boolean = true
-  ) {
+  private playTone(freq: number, type: OscillatorType, duration: number, volume: number = 0.1, ramp: boolean = true) {
     if (!this.ctx) return;
-
-    const osc = this.ctx.createOscillator()!;
-    const gain = this.ctx.createGain()!;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
 
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.ctx!.currentTime);
-
-    gain.gain.setValueAtTime(volume, this.ctx!.currentTime);
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    
+    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
     if (ramp) {
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx!.currentTime + duration);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
     } else {
-      setTimeout(() => gain.gain.setValueAtTime(0, this.ctx!.currentTime), duration * 1000);
+      setTimeout(() => gain.gain.setValueAtTime(0, this.ctx.currentTime), duration * 1000);
     }
 
     osc.connect(gain);
-    gain.connect(this.ctx!.destination);
+    gain.connect(this.ctx.destination);
 
     osc.start();
-    osc.stop(this.ctx!.currentTime + duration);
+    osc.stop(this.ctx.currentTime + duration);
   }
 
   playShoot() {

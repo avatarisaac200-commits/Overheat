@@ -1,16 +1,16 @@
 
 {
-  "name": "Overheat: Retro Arcade",
+  "name": "Overheat",
   "short_name": "Overheat",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#0074D9",
+  "theme_color": "#FF4136",
   "orientation": "portrait",
-  "description": "An 8-bit retro arcade shooter with an overheat mechanic.",
+  "description": "Retro 8-bit arcade shooter with a unique overheat mechanic.",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/528/528076.png",
+      "src": "assets/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
