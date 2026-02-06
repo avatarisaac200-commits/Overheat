@@ -87,8 +87,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
 
   const spawnEnemy = (type: EnemyType) => {
     const g = gameRef.current;
-    // Base HP scaling with level
-    let hp = type === 'tank' ? 3 : type === 'boss' ? 40 + (currentLevelIndex * 5) : 1;
+    // Base HP scaling with level - Made easier for level 1 (index 0)
+    let hp = type === 'tank' ? 3 : type === 'boss' ? (currentLevelIndex === 9 ? 60 : 12 + currentLevelIndex * 6) : 1;
     let width = type === 'boss' ? BOSS_SIZE : ENEMY_SIZE;
     let height = type === 'boss' ? BOSS_SIZE : ENEMY_SIZE;
     let vy = type === 'boss' ? 0.3 : 1.2 + currentLevelIndex * 0.15;

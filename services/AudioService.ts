@@ -9,25 +9,28 @@ class AudioService {
   }
 
   private playTone(freq: number, type: OscillatorType, duration: number, volume: number = 0.1, ramp: boolean = true) {
-    if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const ctx = this.ctx;
+    if (!ctx) return;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
     
-    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
     if (ramp) {
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
     } else {
-      setTimeout(() => gain.gain.setValueAtTime(0, this.ctx.currentTime), duration * 1000);
+      // Precise scheduling is better than setTimeout and avoids the TS null check issue
+      gain.gain.setValueAtTime(0, ctx.currentTime + duration);
     }
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(this.ctx.currentTime + duration);
+    osc.stop(ctx.currentTime + duration);
   }
 
   playShoot() {
