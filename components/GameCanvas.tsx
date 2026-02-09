@@ -459,7 +459,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         (e.type === 'tank' ? COLORS.GRAY :
         (e.type === 'midboss' ? COLORS.ORANGE :
         (e.type === 'sentry' ? COLORS.BLUE :
-        (e.type === 'sweeper' ? COLORS.GREEN : COLORS.RED)))));
+        (e.type === 'sweeper' ? COLORS.GREEN : COLORS.RED))))));
       ctx.fillRect(e.x, e.y, e.width, e.height);
       
       if (e.type === 'boss') {
