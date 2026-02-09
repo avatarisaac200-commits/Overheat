@@ -9,7 +9,7 @@ export enum GameState {
   VICTORY = 'VICTORY'
 }
 
-export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'cluster' | 'mini';
+export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'midboss' | 'cluster' | 'mini' | 'sentry' | 'sweeper';
 
 export interface GameObject {
   x: number;
@@ -23,6 +23,7 @@ export interface GameObject {
 export interface Bullet extends GameObject {
   owner: 'player' | 'enemy';
   isHoming?: boolean;
+  isPiercing?: boolean;
 }
 
 export interface Enemy extends GameObject {
@@ -37,7 +38,7 @@ export interface Enemy extends GameObject {
 
 export interface Platform extends GameObject {}
 
-export type PowerUpType = 'shield' | 'life' | 'multishot' | 'bomb';
+export type PowerUpType = 'shield' | 'life' | 'multishot' | 'bomb' | 'coolant' | 'pierce' | 'slow';
 
 export interface PowerUp extends GameObject {
   type: PowerUpType;

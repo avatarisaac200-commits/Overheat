@@ -183,7 +183,12 @@ const App: React.FC = () => {
         <div className="text-center p-10 max-w-md animate-in slide-in-from-bottom duration-700">
           <h2 className="text-yellow-400 text-2xl mb-10 tracking-[0.2em]">CORE SECURED</h2>
           <div className="text-[10px] text-zinc-300 mb-10 leading-loose">
-            EMPEROR DEFEATED. THE CODE BASE IS STABILIZED. YOU ARE THE SUPREME DEFENDER.
+            HELIX DEFEATED. THE THERMAL GRID IS STABILIZED. YOU ARE THE SUPREME DEFENDER.
+          </div>
+          <div className="text-[9px] text-zinc-500 leading-relaxed mb-10">
+            EPILOGUE: In the quiet afterglow, the city-core learns to breathe without its tyrant.
+            Your drone docks in the coldglass vault, its hull cracked but its log intact.
+            The next dawn boots on time, and the grid remembers your call-sign forever.
           </div>
           <button 
             onClick={() => {

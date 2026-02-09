@@ -1,4 +1,6 @@
 
+import type { EnemyType } from './types';
+
 export const COLORS = {
   BLACK: '#000000',
   WHITE: '#FFFFFF',
@@ -26,89 +28,128 @@ export const OVERHEAT_THRESHOLD_SECONDS = 2.0;
 export const RAPID_FIRE_THRESHOLD = 5;
 export const COMBO_TIMEOUT = 1500;
 
-export const STORY_LEVELS = [
+export interface LevelWave {
+  type: EnemyType;
+  count: number;
+  spawnInterval?: number;
+  burst?: number;
+}
+
+export interface StoryLevel {
+  title: string;
+  intro: string;
+  waves: LevelWave[];
+}
+
+export const STORY_LEVELS: StoryLevel[] = [
   {
-    title: "Sector 01: The Breach",
-    intro: "A localized glitch has been detected in the boot sector. They are small, weak, and disorganized. Delete them before they replicate. Watch your core temperature.",
+    title: "Sector 01: Ember Boot",
+    intro: "The city-core wakes in a fever. You are the only hotfix drone left. Stabilize the boot grid and keep your heat line clean or the chassis cracks.",
     waves: [
-      { type: 'tank', count: 6 },
-      { type: 'diver', count: 4 },
-      { type: 'orb', count: 5 }
+      { type: 'orb', count: 10, spawnInterval: 55 },
+      { type: 'diver', count: 8, spawnInterval: 50 },
+      { type: 'midboss', count: 1, spawnInterval: 80 },
+      { type: 'tank', count: 6, spawnInterval: 60 },
+      { type: 'shooter', count: 6, spawnInterval: 55 }
     ]
   },
   {
-    title: "Sector 02: Firewall Fault",
-    intro: "The Empire has deployed 'Shooters'. These drones will target your heat signature directly. Precision fire is required. Keep moving, Bouncer.",
+    title: "Sector 02: Trace Cascade",
+    intro: "Helix, the thermal overseer, tags your wake. Sentries line the ducts. Tap fire, cool, then surge or the shell blooms.",
     waves: [
-      { type: 'shooter', count: 8 },
-      { type: 'tank', count: 6 },
-      { type: 'diver', count: 5 }
+      { type: 'sentry', count: 10, spawnInterval: 52 },
+      { type: 'orb', count: 12, spawnInterval: 48 },
+      { type: 'midboss', count: 1, spawnInterval: 80 },
+      { type: 'diver', count: 10, spawnInterval: 46 },
+      { type: 'tank', count: 8, spawnInterval: 58 }
     ]
   },
   {
-    title: "Sector 03: Splitting Signal",
-    intro: "Intelligence reports 'Cluster' cells. Destroying one will cause it to fracture into smaller, faster fragments. Don't get surrounded in the code debris.",
+    title: "Sector 03: Split-Lattice",
+    intro: "The lattice fractures into swarm logic. Cluster cores split on impact and mini-cells flank your cooling lanes.",
     waves: [
-      { type: 'cluster', count: 6 },
-      { type: 'orb', count: 10 },
-      { type: 'shooter', count: 5 }
+      { type: 'cluster', count: 12, spawnInterval: 50 },
+      { type: 'orb', count: 16, spawnInterval: 45 },
+      { type: 'midboss', count: 1, spawnInterval: 78 },
+      { type: 'shooter', count: 12, spawnInterval: 50 },
+      { type: 'sweeper', count: 10, spawnInterval: 52 }
     ]
   },
   {
-    title: "Sector 04: Ghost Protocol",
-    intro: "Sensors are failing. Stealth 'Divers' are coming out of the shadows at high speeds. Your reflexes will be tested. Stay cool, or explode.",
+    title: "Sector 04: Ghost Dive",
+    intro: "Dive units phase out, then cut across your line. Helix splices their timing. Stay cold, stay sharp.",
     waves: [
-      { type: 'diver', count: 15 },
-      { type: 'tank', count: 10 }
+      { type: 'diver', count: 20, spawnInterval: 44 },
+      { type: 'midboss', count: 1, spawnInterval: 78 },
+      { type: 'sweeper', count: 12, spawnInterval: 48 },
+      { type: 'tank', count: 10, spawnInterval: 58 },
+      { type: 'shooter', count: 10, spawnInterval: 46 }
     ]
   },
   {
-    title: "Sector 05: Data Storm",
-    intro: "We're halfway to the core. The Glitch Empire is throwing everything at us. It's a binary blizzard. Grab those power-ups—you're going to need them.",
+    title: "Sector 05: Flux Rain",
+    intro: "Thermal storms shake the mid-core. The grid flickers, and your vents lag. Grab coolant and punch through.",
     waves: [
-      { type: 'orb', count: 12 },
-      { type: 'shooter', count: 8 },
-      { type: 'cluster', count: 4 }
+      { type: 'orb', count: 20, spawnInterval: 42 },
+      { type: 'sentry', count: 14, spawnInterval: 46 },
+      { type: 'midboss', count: 1, spawnInterval: 76 },
+      { type: 'cluster', count: 10, spawnInterval: 50 },
+      { type: 'diver', count: 12, spawnInterval: 44 }
     ]
   },
   {
-    title: "Sector 06: Sub-Zero Buffer",
-    intro: "Temperature regulation is getting harder. The enemies are more aggressive. 'Orbs' are performing complex sine maneuvers to evade your shots.",
+    title: "Sector 06: Coldglass Vault",
+    intro: "A sealed vault of frozen cores. Helix tries to lock the doors behind you. The chill helps, but the guard swarm is thicker.",
     waves: [
-      { type: 'orb', count: 20 },
-      { type: 'diver', count: 8 }
+      { type: 'sweeper', count: 18, spawnInterval: 40 },
+      { type: 'midboss', count: 1, spawnInterval: 74 },
+      { type: 'orb', count: 22, spawnInterval: 40 },
+      { type: 'shooter', count: 16, spawnInterval: 44 },
+      { type: 'tank', count: 12, spawnInterval: 56 }
     ]
   },
   {
     title: "Sector 07: Heavy Logic",
-    intro: "The Elite Guard has arrived. High-HP 'Tanks' are forming a wall. You'll need sustained fire—but be careful not to trigger an overheat event.",
+    intro: "Armor cores roll in. Tanks stack in columns while sentries rain on your heat gauge. Find a rhythm or melt out.",
     waves: [
-      { type: 'tank', count: 20 },
-      { type: 'shooter', count: 10 }
+      { type: 'tank', count: 22, spawnInterval: 54 },
+      { type: 'midboss', count: 1, spawnInterval: 72 },
+      { type: 'sentry', count: 18, spawnInterval: 44 },
+      { type: 'diver', count: 16, spawnInterval: 42 },
+      { type: 'orb', count: 18, spawnInterval: 40 }
     ]
   },
   {
     title: "Sector 08: Recursive Nightmare",
-    intro: "The code is looping! Clusters within clusters. The screen will be filled with mini-glitches. Use your bombs wisely.",
+    intro: "Every kill splits the logic into smaller shards. The longer you last, the denser it becomes. Bombs are your exhale.",
     waves: [
-      { type: 'cluster', count: 12 },
-      { type: 'diver', count: 10 }
+      { type: 'cluster', count: 18, spawnInterval: 44 },
+      { type: 'midboss', count: 1, spawnInterval: 70 },
+      { type: 'diver', count: 18, spawnInterval: 40 },
+      { type: 'sweeper', count: 16, spawnInterval: 42 },
+      { type: 'shooter', count: 16, spawnInterval: 44 }
     ]
   },
   {
-    title: "Sector 09: Gatekeeper's Gauntlet",
-    intro: "The Emperor's personal guard. Every type of glitch is here, coordinated and deadly. Survive this, and the core is yours to save.",
+    title: "Sector 09: Gatekeeper Gauntlet",
+    intro: "All defense strata converge. Helix shifts into active suppression. Your heat window is razor thin. Tap, move, tap.",
     waves: [
-      { type: 'tank', count: 10 },
-      { type: 'shooter', count: 10 },
-      { type: 'diver', count: 10 },
-      { type: 'orb', count: 10 }
+      { type: 'tank', count: 18, spawnInterval: 52 },
+      { type: 'midboss', count: 1, spawnInterval: 68 },
+      { type: 'shooter', count: 18, spawnInterval: 44 },
+      { type: 'sentry', count: 16, spawnInterval: 42 },
+      { type: 'diver', count: 18, spawnInterval: 40 },
+      { type: 'orb', count: 22, spawnInterval: 38 }
     ]
   },
   {
-    title: "Sector 10: The Core Emperor",
-    intro: "The source of the corruption. A massive, multi-phase entity that warps space itself. Everything is on the line. Stabilize the core... or burn with it.",
+    title: "Sector 10: Helix Crown",
+    intro: "Helix manifests as a core emperor. It cycles through three thermal phases and spawns watchers. Break the crown or burn.",
     waves: [
+      { type: 'sentry', count: 14, spawnInterval: 40 },
+      { type: 'sweeper', count: 16, spawnInterval: 38 },
+      { type: 'midboss', count: 1, spawnInterval: 66 },
+      { type: 'cluster', count: 12, spawnInterval: 42 },
       { type: 'boss', count: 1 }
     ]
   }
