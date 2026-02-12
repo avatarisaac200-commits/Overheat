@@ -18,9 +18,10 @@ interface GameCanvasProps {
   gameState: GameState;
   onStateChange: (state: GameState) => void;
   uiSettings: UiSettings;
+  onReturnToMainMenu: () => void;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGameOver, onLevelComplete, gameState, onStateChange, uiSettings }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGameOver, onLevelComplete, gameState, onStateChange, uiSettings, onReturnToMainMenu }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -130,6 +131,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
       window.removeEventListener('blur', stopShooting);
     };
   }, []);
+
+  useEffect(() => {
+    if (gameState === GameState.PAUSED) {
+      const g = gameRef.current;
+      g.isShooting = false;
+      g.movePointerId = null;
+    }
+  }, [gameState]);
 
   const spawnExplosion = (x: number, y: number, color: string, count: number = 10, size: number = 3) => {
     for (let i = 0; i < count; i++) {
@@ -742,6 +751,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
         }}
         onPointerDown={(e) => {
           e.preventDefault();
+          if (gameState !== GameState.PLAYING) return;
           audioService.init();
           const g = gameRef.current;
           g.isShooting = true;
@@ -754,6 +764,53 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
       >
         FIRE
       </button>
+
+      <div className="absolute top-4 left-4 z-30 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onStateChange(gameState === GameState.PLAYING ? GameState.PAUSED : GameState.PLAYING)}
+          className="px-3 py-2 bg-zinc-800/85 hover:bg-zinc-700/95 border border-zinc-500 text-[8px] tracking-[0.12em] uppercase"
+          aria-label={gameState === GameState.PLAYING ? 'Pause game' : 'Resume game'}
+        >
+          {gameState === GameState.PLAYING ? 'PAUSE' : 'RESUME'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            gameRef.current.isShooting = false;
+            onReturnToMainMenu();
+          }}
+          className="px-3 py-2 bg-red-900/85 hover:bg-red-800/95 border border-red-400 text-[8px] tracking-[0.12em] uppercase"
+          aria-label="Return to main menu"
+        >
+          MENU
+        </button>
+      </div>
+
+      {gameState === GameState.PAUSED && (
+        <div className="absolute inset-0 z-30 bg-black/65 flex items-center justify-center">
+          <div className="w-[80%] max-w-xs p-5 text-center border border-zinc-600 bg-zinc-900/90">
+            <div className="text-[11px] text-zinc-200 mb-5 tracking-[0.2em]">PAUSED</div>
+            <button
+              type="button"
+              onClick={() => onStateChange(GameState.PLAYING)}
+              className="w-full py-3 mb-3 bg-green-600 hover:bg-green-500 border-b-4 border-green-800 text-[9px] uppercase"
+            >
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                gameRef.current.isShooting = false;
+                onReturnToMainMenu();
+              }}
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 border-b-4 border-zinc-900 text-[9px] uppercase"
+            >
+              Return to Main Menu
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="relative w-full max-w-[400px]">
         {uiSettings.showScanlines && <div className="absolute inset-0 scanlines pointer-events-none z-20" />}

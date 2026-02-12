@@ -1,11 +1,12 @@
 
-const CACHE_NAME = 'overheat-v2';
+const CACHE_NAME = 'overheat-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './index.css',
   './manifest.json',
-  './assets/logo.png'
+  './assets/logo.png',
+  './sw.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -18,10 +19,15 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const request = event.request;
+  const requestUrl = new URL(request.url);
+
+  // Ignore browser extensions and third-party origins.
+  if (requestUrl.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      caches.match('./index.html').then((cachedIndex) => {
+        return fetch(request)
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -29,7 +35,8 @@ self.addEventListener('fetch', (event) => {
           });
           return response;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => cachedIndex || caches.match('./'))
+      })
     );
     return;
   }

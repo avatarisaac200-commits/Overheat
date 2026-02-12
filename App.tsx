@@ -7,6 +7,34 @@ import { admobService } from './services/AdmobService';
 import { STORY_LEVELS } from './constants';
 
 const SETTINGS_STORAGE_KEY = 'overheat_ui_settings';
+const HIGH_SCORE_STORAGE_KEY = 'overheat_highscore';
+const UNLOCKED_STORAGE_KEY = 'overheat_unlocked';
+
+const storageFallback = new Map<string, string>();
+
+const getStoredValue = (key: string): string | null => {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return storageFallback.get(key) ?? null;
+  }
+};
+
+const setStoredValue = (key: string, value: string): void => {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    storageFallback.set(key, value);
+  }
+};
+
+const removeStoredValue = (key: string): void => {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    storageFallback.delete(key);
+  }
+};
 
 const defaultUiSettings: UiSettings = {
   uiScale: 1,
@@ -31,13 +59,13 @@ const App: React.FC = () => {
   const [uiSettings, setUiSettings] = useState<UiSettings>(defaultUiSettings);
 
   useEffect(() => {
-    const savedHS = localStorage.getItem('overheat_highscore');
+    const savedHS = getStoredValue(HIGH_SCORE_STORAGE_KEY);
     if (savedHS) setHighScore(parseInt(savedHS, 10));
 
-    const savedUL = localStorage.getItem('overheat_unlocked');
+    const savedUL = getStoredValue(UNLOCKED_STORAGE_KEY);
     if (savedUL) setUnlockedLevel(parseInt(savedUL, 10));
 
-    const rawSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const rawSettings = getStoredValue(SETTINGS_STORAGE_KEY);
     if (rawSettings) {
       try {
         const parsed = JSON.parse(rawSettings) as Partial<UiSettings>;
@@ -52,7 +80,7 @@ const App: React.FC = () => {
           }
         });
       } catch {
-        localStorage.removeItem(SETTINGS_STORAGE_KEY);
+        removeStoredValue(SETTINGS_STORAGE_KEY);
       }
     }
 
@@ -65,14 +93,14 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(uiSettings));
+    setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(uiSettings));
   }, [uiSettings]);
 
   const handleGameOver = async (finalScore: number) => {
     setScore(finalScore);
     if (finalScore > highScore) {
       setHighScore(finalScore);
-      localStorage.setItem('overheat_highscore', finalScore.toString());
+      setStoredValue(HIGH_SCORE_STORAGE_KEY, finalScore.toString());
     }
     setGameState(GameState.GAMEOVER);
     await admobService.showInterstitial();
@@ -94,7 +122,7 @@ const App: React.FC = () => {
     if (nextIdx < 10) {
       if (nextIdx + 1 > unlockedLevel) {
         setUnlockedLevel(nextIdx + 1);
-        localStorage.setItem('overheat_unlocked', (nextIdx + 1).toString());
+        setStoredValue(UNLOCKED_STORAGE_KEY, (nextIdx + 1).toString());
       }
       setCurrentLevel(nextIdx);
       setGameState(GameState.NARRATIVE);
@@ -103,6 +131,10 @@ const App: React.FC = () => {
       setGameState(GameState.VICTORY);
       await admobService.showInterstitial();
     }
+  };
+
+  const returnToMainMenu = () => {
+    setGameState(GameState.START);
   };
 
   const updateFireButtonPositionFromEditor = (clientX: number, clientY: number, bounds: DOMRect) => {
@@ -199,10 +231,10 @@ const App: React.FC = () => {
             })}
           </div>
           <button 
-            onClick={() => setGameState(GameState.START)}
+            onClick={returnToMainMenu}
             className="text-[8px] text-zinc-600 hover:text-white underline uppercase transition-colors"
           >
-            Back to Terminal
+            Return to Main Menu
           </button>
         </div>
       )}
@@ -317,10 +349,10 @@ const App: React.FC = () => {
           </section>
 
           <button
-            onClick={() => setGameState(GameState.START)}
+            onClick={returnToMainMenu}
             className="mt-8 w-full py-4 bg-red-600 hover:bg-red-500 text-white text-[10px] border-b-4 border-red-900 active:border-b-0 active:translate-y-1"
           >
-            BACK TO MENU
+            RETURN TO MAIN MENU
           </button>
         </div>
       )}
@@ -341,6 +373,12 @@ const App: React.FC = () => {
           >
             INITIATE PURGE
           </button>
+          <button
+            onClick={returnToMainMenu}
+            className="mt-4 w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-[9px] border-b-4 border-zinc-950 active:border-b-0 active:translate-y-1"
+          >
+            RETURN TO MAIN MENU
+          </button>
         </div>
       )}
 
@@ -354,6 +392,7 @@ const App: React.FC = () => {
             gameState={gameState}
             onStateChange={setGameState}
             uiSettings={uiSettings}
+            onReturnToMainMenu={returnToMainMenu}
           />
         </div>
       )}
@@ -378,6 +417,12 @@ const App: React.FC = () => {
           >
             Selector Menu
           </button>
+          <button 
+            onClick={returnToMainMenu}
+            className="mt-4 text-[10px] text-zinc-600 hover:text-white underline uppercase transition-colors"
+          >
+            Return to Main Menu
+          </button>
         </div>
       )}
 
@@ -394,13 +439,13 @@ const App: React.FC = () => {
           </div>
           <button 
             onClick={() => {
-              setGameState(GameState.START);
+              returnToMainMenu();
               setUnlockedLevel(10);
-              localStorage.setItem('overheat_unlocked', '10');
+              setStoredValue(UNLOCKED_STORAGE_KEY, '10');
             }}
             className="w-full py-5 bg-blue-600 text-white text-xs border-b-8 border-blue-900"
           >
-            MISSION COMPLETE
+            RETURN TO MAIN MENU
           </button>
         </div>
       )}
