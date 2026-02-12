@@ -727,7 +727,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
       </div>
 
       <button
-        className="absolute top-24 left-1/2 -translate-x-1/2 z-30 px-6 py-3 bg-red-600/90 border-2 border-red-300 text-[10px] tracking-[0.2em] uppercase shadow-[0_0_12px_rgba(255,65,54,0.6)] active:translate-y-[1px] active:bg-red-500 select-none"
+        className="absolute bottom-8 left-[calc(50%+12px)] -translate-x-1/2 z-30 px-4 py-2 bg-red-600/80 border border-red-300 text-[8px] tracking-[0.14em] uppercase shadow-[0_0_8px_rgba(255,65,54,0.45)] active:translate-y-[1px] active:bg-red-500 select-none"
         onPointerDown={(e) => {
           e.preventDefault();
           audioService.init();
