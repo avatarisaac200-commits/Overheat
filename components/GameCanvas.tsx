@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { 
-  GameState, Bullet, Enemy, Platform, PowerUp, Particle, EnemyType, PowerUpType 
+  GameState, Bullet, Enemy, Platform, PowerUp, Particle, EnemyType, PowerUpType, UiSettings
 } from '../types';
 import { 
   COLORS, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, 
@@ -17,9 +17,10 @@ interface GameCanvasProps {
   onLevelComplete: () => void;
   gameState: GameState;
   onStateChange: (state: GameState) => void;
+  uiSettings: UiSettings;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGameOver, onLevelComplete, gameState, onStateChange }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGameOver, onLevelComplete, gameState, onStateChange, uiSettings }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -693,7 +694,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-black">
-      <div className="absolute top-4 left-4 right-4 flex justify-between text-[10px] z-20 pointer-events-none">
+      <div
+        className="absolute top-4 left-4 right-4 flex justify-between text-[10px] z-20 pointer-events-none origin-top"
+        style={{ transform: `scale(${uiSettings.uiScale})` }}
+      >
         <div>SCORE: {score.toLocaleString()}</div>
         <div className="flex gap-2 items-center">
           {activeShield && <span className="text-cyan-400 text-[8px] animate-pulse">SHIELD</span>}
@@ -714,7 +718,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
         </div>
       </div>
       
-      <div className="absolute top-12 left-4 right-4 flex justify-end text-[10px] z-20 pointer-events-none">
+      <div
+        className="absolute top-12 left-4 right-4 flex justify-end text-[10px] z-20 pointer-events-none origin-top-right"
+        style={{ transform: `scale(${uiSettings.uiScale})` }}
+      >
         <div className="flex flex-col items-end">
           <div className="mb-1 text-[8px] text-zinc-500 uppercase">Core Temp</div>
           <div className="w-24 h-2 bg-zinc-800 border border-zinc-700">
@@ -727,7 +734,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
       </div>
 
       <button
-        className="absolute bottom-8 left-[calc(50%+12px)] -translate-x-1/2 z-30 px-4 py-2 bg-red-600/80 border border-red-300 text-[8px] tracking-[0.14em] uppercase shadow-[0_0_8px_rgba(255,65,54,0.45)] active:translate-y-[1px] active:bg-red-500 select-none"
+        className="absolute z-30 px-4 py-2 bg-red-600/80 border border-red-300 text-[8px] tracking-[0.14em] uppercase shadow-[0_0_8px_rgba(255,65,54,0.45)] active:bg-red-500 select-none"
+        style={{
+          left: `${uiSettings.fireButtonPosition.xPercent}%`,
+          top: `${uiSettings.fireButtonPosition.yPercent}%`,
+          transform: `translate(-50%, -50%) scale(${uiSettings.fireButtonSize})`
+        }}
         onPointerDown={(e) => {
           e.preventDefault();
           audioService.init();
@@ -744,7 +756,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGam
       </button>
 
       <div className="relative w-full max-w-[400px]">
-        <div className="absolute inset-0 scanlines pointer-events-none z-20" />
+        {uiSettings.showScanlines && <div className="absolute inset-0 scanlines pointer-events-none z-20" />}
         <canvas 
           ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} 
           className="w-full aspect-[2/3] border-4 border-zinc-800 bg-black touch-none cursor-none shadow-[0_0_20px_rgba(0,0,0,0.5)] arcade-frame"

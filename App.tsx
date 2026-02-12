@@ -1,10 +1,25 @@
 
 import React, { useState, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas';
-import { GameState } from './types';
+import { GameState, UiSettings } from './types';
 import { audioService } from './services/AudioService';
 import { admobService } from './services/AdmobService';
 import { STORY_LEVELS } from './constants';
+
+const SETTINGS_STORAGE_KEY = 'overheat_ui_settings';
+
+const defaultUiSettings: UiSettings = {
+  uiScale: 1,
+  showScanlines: true,
+  showVignette: true,
+  fireButtonSize: 1,
+  fireButtonPosition: {
+    xPercent: 53,
+    yPercent: 88
+  }
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.BOOT);
@@ -13,6 +28,7 @@ const App: React.FC = () => {
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [runId, setRunId] = useState(0);
+  const [uiSettings, setUiSettings] = useState<UiSettings>(defaultUiSettings);
 
   useEffect(() => {
     const savedHS = localStorage.getItem('overheat_highscore');
@@ -21,6 +37,25 @@ const App: React.FC = () => {
     const savedUL = localStorage.getItem('overheat_unlocked');
     if (savedUL) setUnlockedLevel(parseInt(savedUL, 10));
 
+    const rawSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (rawSettings) {
+      try {
+        const parsed = JSON.parse(rawSettings) as Partial<UiSettings>;
+        setUiSettings({
+          uiScale: clamp(parsed.uiScale ?? defaultUiSettings.uiScale, 0.8, 1.4),
+          showScanlines: parsed.showScanlines ?? defaultUiSettings.showScanlines,
+          showVignette: parsed.showVignette ?? defaultUiSettings.showVignette,
+          fireButtonSize: clamp(parsed.fireButtonSize ?? defaultUiSettings.fireButtonSize, 0.8, 1.6),
+          fireButtonPosition: {
+            xPercent: clamp(parsed.fireButtonPosition?.xPercent ?? defaultUiSettings.fireButtonPosition.xPercent, 5, 95),
+            yPercent: clamp(parsed.fireButtonPosition?.yPercent ?? defaultUiSettings.fireButtonPosition.yPercent, 5, 95)
+          }
+        });
+      } catch {
+        localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      }
+    }
+
     admobService.init();
 
     const bootTimer = setTimeout(() => {
@@ -28,6 +63,10 @@ const App: React.FC = () => {
     }, 1200);
     return () => clearTimeout(bootTimer);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(uiSettings));
+  }, [uiSettings]);
 
   const handleGameOver = async (finalScore: number) => {
     setScore(finalScore);
@@ -66,14 +105,23 @@ const App: React.FC = () => {
     }
   };
 
+  const updateFireButtonPositionFromEditor = (clientX: number, clientY: number, bounds: DOMRect) => {
+    const xPercent = clamp(((clientX - bounds.left) / bounds.width) * 100, 5, 95);
+    const yPercent = clamp(((clientY - bounds.top) / bounds.height) * 100, 5, 95);
+    setUiSettings((prev) => ({
+      ...prev,
+      fireButtonPosition: { xPercent, yPercent }
+    }));
+  };
+
   // Relative path ensures compatibility across varied hosting environments
   const LOGO_PATH = "./assets/logo.png";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black text-white font-['Press_Start_2P'] select-none overflow-hidden">
       <div className="absolute inset-0 arcade-bg" />
-      <div className="absolute inset-0 scanlines pointer-events-none" />
-      <div className="absolute inset-0 vignette pointer-events-none" />
+      {uiSettings.showScanlines && <div className="absolute inset-0 scanlines pointer-events-none" />}
+      {uiSettings.showVignette && <div className="absolute inset-0 vignette pointer-events-none" />}
 
       {gameState === GameState.BOOT && (
         <div className="text-center p-8 max-w-md boot-flicker">
@@ -114,6 +162,13 @@ const App: React.FC = () => {
           >
             START MISSION
           </button>
+
+          <button
+            onClick={() => setGameState(GameState.SETTINGS)}
+            className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] border-b-4 border-zinc-950 active:border-b-0 active:translate-y-1 transition-all"
+          >
+            SETTINGS
+          </button>
           
           <div className="mt-8 text-[9px] text-zinc-500 uppercase tracking-[0.2em]">
             SYSTEM RECORD: {highScore.toLocaleString()}
@@ -152,6 +207,124 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {gameState === GameState.SETTINGS && (
+        <div className="p-6 w-full max-w-3xl animate-in fade-in zoom-in duration-300 panel-card">
+          <h2 className="text-center text-lg mb-6 tracking-[0.25em] text-red-400">SETTINGS</h2>
+
+          <div className="grid gap-6 md:grid-cols-2 text-[9px]">
+            <section className="space-y-5">
+              <h3 className="text-zinc-300 text-[10px] tracking-[0.15em]">UI CUSTOMIZATION</h3>
+
+              <label className="block">
+                <div className="mb-2 text-zinc-400">HUD SCALE: {(uiSettings.uiScale * 100).toFixed(0)}%</div>
+                <input
+                  type="range"
+                  min={0.8}
+                  max={1.4}
+                  step={0.05}
+                  value={uiSettings.uiScale}
+                  onChange={(e) => setUiSettings((prev) => ({ ...prev, uiScale: parseFloat(e.target.value) }))}
+                  className="w-full accent-red-500"
+                />
+              </label>
+
+              <label className="block">
+                <div className="mb-2 text-zinc-400">FIRE BUTTON SIZE: {(uiSettings.fireButtonSize * 100).toFixed(0)}%</div>
+                <input
+                  type="range"
+                  min={0.8}
+                  max={1.6}
+                  step={0.05}
+                  value={uiSettings.fireButtonSize}
+                  onChange={(e) => setUiSettings((prev) => ({ ...prev, fireButtonSize: parseFloat(e.target.value) }))}
+                  className="w-full accent-red-500"
+                />
+              </label>
+
+              <label className="flex items-center justify-between py-2 border-b border-zinc-800">
+                <span className="text-zinc-300">SCANLINES</span>
+                <input
+                  type="checkbox"
+                  checked={uiSettings.showScanlines}
+                  onChange={(e) => setUiSettings((prev) => ({ ...prev, showScanlines: e.target.checked }))}
+                  className="h-4 w-4 accent-red-500"
+                />
+              </label>
+
+              <label className="flex items-center justify-between py-2 border-b border-zinc-800">
+                <span className="text-zinc-300">VIGNETTE</span>
+                <input
+                  type="checkbox"
+                  checked={uiSettings.showVignette}
+                  onChange={(e) => setUiSettings((prev) => ({ ...prev, showVignette: e.target.checked }))}
+                  className="h-4 w-4 accent-red-500"
+                />
+              </label>
+
+              <button
+                onClick={() => setUiSettings(defaultUiSettings)}
+                className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border-b-4 border-zinc-950 active:border-b-0 active:translate-y-1 text-[9px]"
+              >
+                RESET TO DEFAULTS
+              </button>
+            </section>
+
+            <section className="space-y-5">
+              <h3 className="text-zinc-300 text-[10px] tracking-[0.15em]">FIRE BUTTON POSITION</h3>
+              <div className="text-zinc-500 leading-relaxed">
+                Drag the red button in the field below to place it anywhere on the gameplay screen.
+              </div>
+              <div
+                className="relative h-56 border-2 border-zinc-700 bg-black/70 overflow-hidden touch-none"
+                onPointerDown={(e) => {
+                  const target = e.currentTarget;
+                  target.setPointerCapture(e.pointerId);
+                  updateFireButtonPositionFromEditor(e.clientX, e.clientY, target.getBoundingClientRect());
+                }}
+                onPointerMove={(e) => {
+                  if ((e.buttons & 1) !== 1) return;
+                  updateFireButtonPositionFromEditor(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect());
+                }}
+              >
+                {uiSettings.showScanlines && <div className="absolute inset-0 scanlines pointer-events-none opacity-25" />}
+                <button
+                  type="button"
+                  className="absolute px-3 py-2 bg-red-600 border border-red-300 text-[8px] tracking-[0.14em] uppercase shadow-[0_0_8px_rgba(255,65,54,0.45)] pointer-events-none"
+                  style={{
+                    left: `${uiSettings.fireButtonPosition.xPercent}%`,
+                    top: `${uiSettings.fireButtonPosition.yPercent}%`,
+                    transform: `translate(-50%, -50%) scale(${uiSettings.fireButtonSize})`
+                  }}
+                >
+                  FIRE
+                </button>
+              </div>
+              <div className="text-zinc-500">
+                X: {uiSettings.fireButtonPosition.xPercent.toFixed(1)}% | Y: {uiSettings.fireButtonPosition.yPercent.toFixed(1)}%
+              </div>
+            </section>
+          </div>
+
+          <section className="mt-8 border-t border-zinc-800 pt-6">
+            <h3 className="text-zinc-300 text-[10px] tracking-[0.15em] mb-3">ABOUT</h3>
+            <p className="text-[9px] text-zinc-400 leading-relaxed">
+              OVERHEAT is an arcade survival shooter where your ship can melt down if you hold fire too long.
+              Survive each sector, manage heat, and adapt to enemy waves and power-ups.
+            </p>
+            <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
+              Tip: this settings page changes the live game HUD and controls. Your custom setup is saved locally.
+            </p>
+          </section>
+
+          <button
+            onClick={() => setGameState(GameState.START)}
+            className="mt-8 w-full py-4 bg-red-600 hover:bg-red-500 text-white text-[10px] border-b-4 border-red-900 active:border-b-0 active:translate-y-1"
+          >
+            BACK TO MENU
+          </button>
+        </div>
+      )}
+
       {gameState === GameState.NARRATIVE && (
         <div className="p-8 max-w-lg text-center bg-zinc-900/60 border-2 border-zinc-800 rounded-sm animate-in fade-in duration-500 shadow-2xl panel-card">
           <div className="text-[8px] text-red-500 mb-2 tracking-widest uppercase font-bold">Encrypted Message</div>
@@ -180,6 +353,7 @@ const App: React.FC = () => {
             onLevelComplete={nextLevel}
             gameState={gameState}
             onStateChange={setGameState}
+            uiSettings={uiSettings}
           />
         </div>
       )}

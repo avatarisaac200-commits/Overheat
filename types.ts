@@ -4,11 +4,25 @@ export enum GameState {
   START = 'START',
   LEVEL_SELECT = 'LEVEL_SELECT',
   NARRATIVE = 'NARRATIVE',
+  SETTINGS = 'SETTINGS',
   PLAYING = 'PLAYING',
   PAUSED = 'PAUSED',
   ABOUT = 'ABOUT',
   GAMEOVER = 'GAMEOVER',
   VICTORY = 'VICTORY'
+}
+
+export interface FireButtonPosition {
+  xPercent: number;
+  yPercent: number;
+}
+
+export interface UiSettings {
+  uiScale: number;
+  showScanlines: boolean;
+  showVignette: boolean;
+  fireButtonSize: number;
+  fireButtonPosition: FireButtonPosition;
 }
 
 export type EnemyType = 'orb' | 'tank' | 'diver' | 'shooter' | 'boss' | 'midboss' | 'cluster' | 'mini' | 'sentry' | 'sweeper' | 'warden' | 'rusher';
