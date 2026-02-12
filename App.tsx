@@ -3,14 +3,16 @@ import React, { useState, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas';
 import { GameState } from './types';
 import { audioService } from './services/AudioService';
+import { admobService } from './services/AdmobService';
 import { STORY_LEVELS } from './constants';
 
 const App: React.FC = () => {
-  const [gameState, setGameState] = useState<GameState>(GameState.START);
+  const [gameState, setGameState] = useState<GameState>(GameState.BOOT);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [unlockedLevel, setUnlockedLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [runId, setRunId] = useState(0);
 
   useEffect(() => {
     const savedHS = localStorage.getItem('overheat_highscore');
@@ -18,19 +20,28 @@ const App: React.FC = () => {
 
     const savedUL = localStorage.getItem('overheat_unlocked');
     if (savedUL) setUnlockedLevel(parseInt(savedUL, 10));
+
+    admobService.init();
+
+    const bootTimer = setTimeout(() => {
+      setGameState(GameState.START);
+    }, 1200);
+    return () => clearTimeout(bootTimer);
   }, []);
 
-  const handleGameOver = (finalScore: number) => {
+  const handleGameOver = async (finalScore: number) => {
     setScore(finalScore);
     if (finalScore > highScore) {
       setHighScore(finalScore);
       localStorage.setItem('overheat_highscore', finalScore.toString());
     }
     setGameState(GameState.GAMEOVER);
+    await admobService.showInterstitial();
   };
 
   const selectLevel = (index: number) => {
     setCurrentLevel(index);
+    setRunId((prev) => prev + 1);
     audioService.init();
     setGameState(GameState.NARRATIVE);
   };
@@ -39,7 +50,7 @@ const App: React.FC = () => {
     setGameState(GameState.PLAYING);
   };
 
-  const nextLevel = () => {
+  const nextLevel = async () => {
     const nextIdx = currentLevel + 1;
     if (nextIdx < 10) {
       if (nextIdx + 1 > unlockedLevel) {
@@ -48,8 +59,10 @@ const App: React.FC = () => {
       }
       setCurrentLevel(nextIdx);
       setGameState(GameState.NARRATIVE);
+      await admobService.showInterstitial();
     } else {
       setGameState(GameState.VICTORY);
+      await admobService.showInterstitial();
     }
   };
 
@@ -58,8 +71,22 @@ const App: React.FC = () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black text-white font-['Press_Start_2P'] select-none overflow-hidden">
+      <div className="absolute inset-0 arcade-bg" />
+      <div className="absolute inset-0 scanlines pointer-events-none" />
+      <div className="absolute inset-0 vignette pointer-events-none" />
+
+      {gameState === GameState.BOOT && (
+        <div className="text-center p-8 max-w-md boot-flicker">
+          <div className="text-[10px] text-zinc-400 uppercase tracking-[0.3em] mb-6">Boot Sequence</div>
+          <div className="text-4xl text-red-500 italic font-black tracking-tighter glitch-text">OVERHEAT</div>
+          <div className="mt-6 text-[9px] text-zinc-500 uppercase">Thermal grid online</div>
+          <div className="mt-3 h-2 w-40 mx-auto bg-zinc-800 border border-zinc-700">
+            <div className="h-full bg-red-600 boot-bar" />
+          </div>
+        </div>
+      )}
       {gameState === GameState.START && (
-        <div className="text-center p-8 max-w-md animate-fade-in flex flex-col items-center">
+        <div className="text-center p-8 max-w-md animate-fade-in flex flex-col items-center panel-card">
           <div className="w-64 h-32 flex items-center justify-center mb-8 relative">
             <img 
               src={LOGO_PATH} 
@@ -76,26 +103,26 @@ const App: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-4 mb-12 w-full">
-            <div className="text-[10px] text-zinc-400 uppercase tracking-widest">Thermal Defense Mission</div>
-            <div className="text-[8px] text-zinc-500 uppercase">Avert the system meltdown</div>
+          <div className="space-y-4 mb-10 w-full">
+            <div className="text-[10px] text-zinc-300 uppercase tracking-[0.4em]">Thermal Defense Mission</div>
+            <div className="text-[8px] text-zinc-500 uppercase">Keep the core below critical heat</div>
           </div>
 
           <button 
             onClick={() => { audioService.init(); setGameState(GameState.LEVEL_SELECT); }}
-            className="w-full py-5 bg-red-600 hover:bg-red-500 text-white text-sm border-b-8 border-red-900 active:border-b-0 active:translate-y-2 transition-all mb-4"
+            className="w-full py-5 bg-red-600 hover:bg-red-500 text-white text-sm border-b-8 border-red-900 active:border-b-0 active:translate-y-2 transition-all mb-4 arcade-cta"
           >
             START MISSION
           </button>
           
-          <div className="mt-8 text-[9px] text-zinc-600 uppercase tracking-[0.2em]">
+          <div className="mt-8 text-[9px] text-zinc-500 uppercase tracking-[0.2em]">
             SYSTEM RECORD: {highScore.toLocaleString()}
           </div>
         </div>
       )}
 
       {gameState === GameState.LEVEL_SELECT && (
-        <div className="text-center p-6 w-full max-w-lg animate-in fade-in zoom-in duration-300">
+        <div className="text-center p-6 w-full max-w-lg animate-in fade-in zoom-in duration-300 panel-card">
           <h2 className="text-lg mb-8 tracking-[0.3em] text-red-400">SELECT SECTOR</h2>
           <div className="grid grid-cols-5 gap-3 mb-10">
             {STORY_LEVELS.map((level, idx) => {
@@ -126,7 +153,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.NARRATIVE && (
-        <div className="p-8 max-w-lg text-center bg-zinc-900/60 border-2 border-zinc-800 rounded-sm animate-in fade-in duration-500 shadow-2xl">
+        <div className="p-8 max-w-lg text-center bg-zinc-900/60 border-2 border-zinc-800 rounded-sm animate-in fade-in duration-500 shadow-2xl panel-card">
           <div className="text-[8px] text-red-500 mb-2 tracking-widest uppercase font-bold">Encrypted Message</div>
           <h2 className="text-yellow-400 text-sm mb-6 leading-relaxed uppercase tracking-tighter">
             {STORY_LEVELS[currentLevel].title}
@@ -148,6 +175,7 @@ const App: React.FC = () => {
         <div className="w-full h-full">
           <GameCanvas 
             currentLevelIndex={currentLevel}
+            runId={runId}
             onGameOver={handleGameOver} 
             onLevelComplete={nextLevel}
             gameState={gameState}
@@ -157,7 +185,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.GAMEOVER && (
-        <div className="text-center p-10 max-w-md animate-in zoom-in duration-300">
+        <div className="text-center p-10 max-w-md animate-in zoom-in duration-300 panel-card">
           <h2 className="text-red-500 text-3xl mb-8 tracking-tighter font-black italic">MELTDOWN</h2>
           <div className="mb-12 space-y-4">
             <div className="text-[9px] text-zinc-500">FINAL LOG SCORE</div>
@@ -180,7 +208,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.VICTORY && (
-        <div className="text-center p-10 max-w-md animate-in slide-in-from-bottom duration-700">
+        <div className="text-center p-10 max-w-md animate-in slide-in-from-bottom duration-700 panel-card">
           <h2 className="text-yellow-400 text-2xl mb-10 tracking-[0.2em]">CORE SECURED</h2>
           <div className="text-[10px] text-zinc-300 mb-10 leading-loose">
             HELIX DEFEATED. THE THERMAL GRID IS STABILIZED. YOU ARE THE SUPREME DEFENDER.
@@ -194,6 +222,7 @@ const App: React.FC = () => {
             onClick={() => {
               setGameState(GameState.START);
               setUnlockedLevel(10);
+              localStorage.setItem('overheat_unlocked', '10');
             }}
             className="w-full py-5 bg-blue-600 text-white text-xs border-b-8 border-blue-900"
           >

@@ -12,13 +12,14 @@ import { audioService } from '../services/AudioService';
 
 interface GameCanvasProps {
   currentLevelIndex: number;
+  runId: number;
   onGameOver: (score: number) => void;
   onLevelComplete: () => void;
   gameState: GameState;
   onStateChange: (state: GameState) => void;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, onLevelComplete, gameState, onStateChange }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, runId, onGameOver, onLevelComplete, gameState, onStateChange }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -28,6 +29,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
   const [coolantActive, setCoolantActive] = useState(false);
   const [pierceActive, setPierceActive] = useState(false);
   const [slowActive, setSlowActive] = useState(false);
+  const [rapidActive, setRapidActive] = useState(false);
+  const [spreadActive, setSpreadActive] = useState(false);
+  const [laserActive, setLaserActive] = useState(false);
+  const [magnetActive, setMagnetActive] = useState(false);
+  const [overdriveActive, setOverdriveActive] = useState(false);
   
   const gameRef = useRef({
     playerX: SCREEN_WIDTH / 2 - PLAYER_SIZE / 2,
@@ -48,10 +54,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     coolantTimer: 0,
     pierceTimer: 0,
     slowTimer: 0,
+    rapidTimer: 0,
+    spreadTimer: 0,
+    laserTimer: 0,
+    magnetTimer: 0,
+    overdriveTimer: 0,
+    scoreMultiplier: 1,
     screenShake: 0,
     enemiesSpawnedInLevel: 0,
     levelFinished: false,
-    currentWaveIndex: 0
+    currentWaveIndex: 0,
+    movePointerId: null as number | null
   });
 
   const resetForLevel = useCallback(() => {
@@ -68,6 +81,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     g.coolantTimer = 0;
     g.pierceTimer = 0;
     g.slowTimer = 0;
+    g.rapidTimer = 0;
+    g.spreadTimer = 0;
+    g.laserTimer = 0;
+    g.magnetTimer = 0;
+    g.overdriveTimer = 0;
+    g.scoreMultiplier = 1;
     g.enemiesSpawnedInLevel = 0;
     g.levelFinished = false;
     g.currentWaveIndex = 0;
@@ -80,11 +99,36 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     setCoolantActive(false);
     setPierceActive(false);
     setSlowActive(false);
+    setRapidActive(false);
+    setSpreadActive(false);
+    setLaserActive(false);
+    setMagnetActive(false);
+    setOverdriveActive(false);
   }, []);
 
   useEffect(() => {
     if (gameState === GameState.PLAYING) resetForLevel();
   }, [gameState, resetForLevel]);
+
+  useEffect(() => {
+    const g = gameRef.current;
+    g.score = 0;
+    setScore(0);
+  }, [runId]);
+
+  useEffect(() => {
+    const stopShooting = () => {
+      gameRef.current.isShooting = false;
+    };
+    window.addEventListener('pointerup', stopShooting);
+    window.addEventListener('pointercancel', stopShooting);
+    window.addEventListener('blur', stopShooting);
+    return () => {
+      window.removeEventListener('pointerup', stopShooting);
+      window.removeEventListener('pointercancel', stopShooting);
+      window.removeEventListener('blur', stopShooting);
+    };
+  }, []);
 
   const spawnExplosion = (x: number, y: number, color: string, count: number = 10, size: number = 3) => {
     for (let i = 0; i < count; i++) {
@@ -98,8 +142,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
   };
 
   const spawnPowerUp = (x: number, y: number) => {
-    const types: PowerUpType[] = ['shield', 'life', 'multishot', 'bomb', 'coolant', 'pierce', 'slow'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    const types: PowerUpType[] = [
+      'shield', 'life', 'multishot', 'bomb', 'coolant', 'pierce', 'slow',
+      'rapid', 'spread', 'laser', 'magnet', 'overdrive'
+    ];
+    const weighted = types.concat(['multishot', 'coolant', 'rapid', 'spread']);
+    const type = weighted[Math.floor(Math.random() * weighted.length)];
     gameRef.current.powerUps.push({
       x, y, width: 14, height: 14, vx: 0, vy: 1.2, type
     });
@@ -116,6 +164,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     if (type === 'cluster') hp = 2 + Math.floor(level / 4);
     if (type === 'orb') hp = 1 + Math.floor(level / 6);
     if (type === 'diver') hp = 1 + Math.floor(level / 6);
+    if (type === 'warden') hp = 3 + Math.floor(level / 4);
+    if (type === 'rusher') hp = 2 + Math.floor(level / 5);
     if (type === 'midboss') hp = 28 + level * 6;
     if (type === 'boss') hp = currentLevelIndex === 9 ? 240 : 140;
     if (type === 'mini') hp = 1;
@@ -129,16 +179,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
       type === 'shooter' ? 1.3 + level * 0.04 :
       type === 'sentry' ? 0.95 + level * 0.03 :
       type === 'sweeper' ? 0.9 + level * 0.04 :
+      type === 'warden' ? 0.8 + level * 0.03 :
+      type === 'rusher' ? 2.2 + level * 0.05 :
       1.3 + level * 0.04
     ));
     let vx = 0;
     if (type === 'sweeper') vx = Math.random() < 0.5 ? -1.6 : 1.6;
+    if (type === 'rusher') vx = Math.random() < 0.5 ? -2.4 : 2.4;
 
     g.enemies.push({
       x: x ?? (Math.random() * (SCREEN_WIDTH - width)),
       y: y ?? -height,
       width, height, vx, vy, hp, maxHp: hp, type,
-      shootTimer: (type === 'shooter' || type === 'sentry' || type === 'midboss' || type === 'boss') ? 70 : undefined,
+      shootTimer: (type === 'shooter' || type === 'sentry' || type === 'midboss' || type === 'boss' || type === 'warden') ? 70 : undefined,
       phase: (type === 'boss' || type === 'midboss') ? 1 : 0,
       sineOffset: Math.random() * 1000
     });
@@ -151,7 +204,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     audioService.playBomb();
     g.enemies.forEach(e => {
       spawnExplosion(e.x + e.width/2, e.y + e.height/2, COLORS.WHITE, 15);
-      g.score += e.type === 'boss' ? 1000 : 150;
+      g.score += (e.type === 'boss' ? 1000 : 150) * g.scoreMultiplier;
     });
     g.enemies = [];
     setScore(g.score);
@@ -211,11 +264,34 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
       g.slowTimer--;
       if (g.slowTimer === 0) setSlowActive(false);
     }
+    if (g.rapidTimer > 0) {
+      g.rapidTimer--;
+      if (g.rapidTimer === 0) setRapidActive(false);
+    }
+    if (g.spreadTimer > 0) {
+      g.spreadTimer--;
+      if (g.spreadTimer === 0) setSpreadActive(false);
+    }
+    if (g.laserTimer > 0) {
+      g.laserTimer--;
+      if (g.laserTimer === 0) setLaserActive(false);
+    }
+    if (g.magnetTimer > 0) {
+      g.magnetTimer--;
+      if (g.magnetTimer === 0) setMagnetActive(false);
+    }
+    if (g.overdriveTimer > 0) {
+      g.overdriveTimer--;
+      if (g.overdriveTimer === 0) setOverdriveActive(false);
+    }
+    g.scoreMultiplier = g.overdriveTimer > 0 ? 2 : 1;
 
     let currentOverheat = 0;
     if (g.isShooting) {
       const duration = (now - g.shootStartTime) / 1000;
-      const threshold = OVERHEAT_THRESHOLD_SECONDS * (g.coolantTimer > 0 ? 1.6 : 1);
+      const threshold = OVERHEAT_THRESHOLD_SECONDS 
+        * (g.coolantTimer > 0 ? 1.6 : 1)
+        * (g.overdriveTimer > 0 ? 0.8 : 1);
       currentOverheat = Math.min(1, duration / threshold);
       if (duration >= threshold) { 
         audioService.playExplosion();
@@ -227,7 +303,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     setOverheatPercent(currentOverheat);
 
     // 3. Bullets
-    g.bullets.forEach((b, i) => {
+    for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
+      const b = g.bullets[bi];
       const slowFactor = (g.slowTimer > 0 && b.owner === 'enemy') ? 0.6 : 1;
       if (b.isHoming && b.owner === 'enemy') {
         const dx = g.playerX + PLAYER_SIZE/2 - b.x;
@@ -240,8 +317,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
       b.y += b.vy * slowFactor;
 
       if (b.y < -50 || b.y > SCREEN_HEIGHT + 50) {
-        g.bullets.splice(i, 1);
-        return;
+        g.bullets.splice(bi, 1);
+        continue;
       }
       
       if (b.owner === 'enemy') {
@@ -249,15 +326,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
           g.lives--; setLives(g.lives);
           audioService.playDamage();
           g.isImmune = 60;
-          g.bullets.splice(i, 1);
+          g.bullets.splice(bi, 1);
           if (g.lives <= 0) onGameOver(g.score);
         }
       } else {
         for (let ei = 0; ei < g.enemies.length; ei++) {
           const e = g.enemies[ei];
           if (b.x < e.x + e.width && b.x + b.width > e.x && b.y < e.y + e.height && b.y + b.height > e.y) {
-            if (!b.isPiercing) g.bullets.splice(i, 1);
-            e.hp--;
+            if (!b.isPiercing) g.bullets.splice(bi, 1);
+            const dmg = b.damage ?? 1;
+            e.hp -= dmg;
             audioService.playHit();
             if (e.hp <= 0) {
               if (e.type === 'boss' && e.phase && e.phase < 3) {
@@ -265,6 +343,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
                 e.hp = e.maxHp;
                 spawnExplosion(e.x + e.width/2, e.y + e.height/2, COLORS.MAGENTA, 30);
                 g.screenShake = 20;
+                spawnEnemy('rusher', e.x - 10, e.y + e.height + 6);
+                spawnEnemy('rusher', e.x + e.width - 10, e.y + e.height + 6);
               } else if (e.type === 'midboss' && e.phase && e.phase < 2) {
                 e.phase++;
                 e.hp = Math.floor(e.maxHp * 0.7);
@@ -275,10 +355,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
                   spawnEnemy('mini', e.x, e.y);
                   spawnEnemy('mini', e.x + 8, e.y);
                 }
-                g.score += e.type === 'boss' ? 5000 : (e.type === 'midboss' ? 1200 : 100);
+                g.score += (e.type === 'boss' ? 5000 : (e.type === 'midboss' ? 1200 : 100)) * g.scoreMultiplier;
                 setScore(g.score);
                 spawnExplosion(e.x + e.width/2, e.y + e.height/2, e.type === 'boss' ? COLORS.MAGENTA : COLORS.RED, 15);
-                if (Math.random() < 0.18) spawnPowerUp(e.x, e.y);
+                if (Math.random() < 0.24) spawnPowerUp(e.x, e.y);
                 g.enemies.splice(ei, 1);
               }
             }
@@ -286,7 +366,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
           }
         }
       }
-    });
+    }
 
     // 4. Enemies
     for (let ei = 0; ei < g.enemies.length; ei++) {
@@ -310,6 +390,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         if (e.y > SCREEN_HEIGHT * 0.18) {
           e.vy = 0.25;
           e.vx = Math.sin((g.frameCount + (e.sineOffset||0)) * 0.04) * 1.6;
+        }
+      }
+      if (e.type === 'warden') {
+        if (e.y > SCREEN_HEIGHT * 0.22) {
+          e.vy = 0.35;
+          e.vx = Math.sin((g.frameCount + (e.sineOffset||0)) * 0.05) * 1.4;
+        }
+      }
+      if (e.type === 'rusher') {
+        if (e.y > SCREEN_HEIGHT * 0.15 && !e.isDiving) {
+          e.isDiving = true;
+          e.vy = 4.8;
+          e.vx = (g.playerX - e.x) / 20;
         }
       }
 
@@ -340,6 +433,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
             g.bullets.push({ x: bx, y: by, width: 5, height: 5, vx: -spread, vy: bulletSpeed + 0.4, owner: 'enemy' });
             g.bullets.push({ x: bx, y: by, width: 5, height: 5, vx: 0, vy: bulletSpeed + 0.8, owner: 'enemy' });
             g.bullets.push({ x: bx, y: by, width: 5, height: 5, vx: spread, vy: bulletSpeed + 0.4, owner: 'enemy' });
+          } else if (e.type === 'warden') {
+            g.bullets.push({ x: bx, y: by, width: 6, height: 6, vx: 0, vy: bulletSpeed + 0.2, owner: 'enemy', isHoming: true });
+            g.bullets.push({ x: bx, y: by, width: 4, height: 4, vx: -1.6, vy: bulletSpeed + 0.4, owner: 'enemy' });
+            g.bullets.push({ x: bx, y: by, width: 4, height: 4, vx: 1.6, vy: bulletSpeed + 0.4, owner: 'enemy' });
           } else if (e.type === 'sentry') {
             const dx = g.playerX + PLAYER_SIZE/2 - bx;
             const dy = g.playerY + PLAYER_SIZE/2 - by;
@@ -370,7 +467,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     }
 
     // 5. PowerUps
-    g.powerUps.forEach((p, i) => {
+    for (let pi = g.powerUps.length - 1; pi >= 0; pi--) {
+      const p = g.powerUps[pi];
+      if (g.magnetTimer > 0) {
+        const dx = (g.playerX + PLAYER_SIZE/2) - (p.x + p.width/2);
+        const dy = (g.playerY + PLAYER_SIZE/2) - (p.y + p.height/2);
+        p.vx += dx * 0.0008;
+        p.vy += dy * 0.0008;
+        p.vx = Math.max(-2.2, Math.min(2.2, p.vx));
+        p.vy = Math.max(-1.6, Math.min(2.4, p.vy));
+      }
+      p.x += p.vx;
       p.y += p.vy;
       if (p.x < g.playerX + PLAYER_SIZE && p.x + p.width > g.playerX && p.y < g.playerY + PLAYER_SIZE && p.y + p.height > g.playerY) {
         audioService.playPowerup();
@@ -386,32 +493,54 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         }
         if (p.type === 'pierce') { g.pierceTimer = 360; setPierceActive(true); }
         if (p.type === 'slow') { g.slowTimer = 300; setSlowActive(true); }
-        g.powerUps.splice(i, 1);
+        if (p.type === 'rapid') { g.rapidTimer = 360; setRapidActive(true); }
+        if (p.type === 'spread') { g.spreadTimer = 360; setSpreadActive(true); }
+        if (p.type === 'laser') { g.laserTimer = 300; setLaserActive(true); }
+        if (p.type === 'magnet') { g.magnetTimer = 420; setMagnetActive(true); }
+        if (p.type === 'overdrive') { g.overdriveTimer = 300; setOverdriveActive(true); }
+        g.powerUps.splice(pi, 1);
       } else if (p.y > SCREEN_HEIGHT) {
-        g.powerUps.splice(i, 1);
+        g.powerUps.splice(pi, 1);
       }
-    });
+    }
 
     // 6. Visuals
-    g.particles.forEach((p, i) => {
+    for (let pi = g.particles.length - 1; pi >= 0; pi--) {
+      const p = g.particles[pi];
       p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-      if (p.life <= 0) g.particles.splice(i, 1);
-    });
+      if (p.life <= 0) g.particles.splice(pi, 1);
+    }
 
     if (g.isImmune > 0) g.isImmune--;
     if (g.screenShake > 0) g.screenShake *= 0.85;
 
     // 7. Shooting
-    if (g.isShooting && now - g.lastShootTime > 140) {
+    let fireDelay = 140;
+    if (g.rapidTimer > 0) fireDelay *= 0.55;
+    if (g.overdriveTimer > 0) fireDelay *= 0.7;
+    if (g.laserTimer > 0) fireDelay *= 1.2;
+    fireDelay = Math.max(60, Math.floor(fireDelay));
+
+    if (g.isShooting && now - g.lastShootTime > fireDelay) {
       const bx = g.playerX + PLAYER_SIZE/2 - BULLET_SIZE/2;
       const by = g.playerY;
+      const baseDamage = 1 + (g.overdriveTimer > 0 ? 1 : 0);
       const isPiercing = g.pierceTimer > 0;
-      if (g.multishotTimer > 0) {
-        g.bullets.push({ x: bx - 8, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: -1.2, vy: -8, owner: 'player', isPiercing });
-        g.bullets.push({ x: bx, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 0, vy: -8, owner: 'player', isPiercing });
-        g.bullets.push({ x: bx + 8, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 1.2, vy: -8, owner: 'player', isPiercing });
+
+      if (g.laserTimer > 0) {
+        g.bullets.push({ x: bx - 1, y: by - 4, width: 6, height: 16, vx: 0, vy: -12, owner: 'player', isPiercing: true, damage: baseDamage + 1 });
+      } else if (g.spreadTimer > 0) {
+        g.bullets.push({ x: bx - 12, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: -2.2, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx - 6, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: -1.1, vy: -8.4, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 0, vy: -8.8, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx + 6, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 1.1, vy: -8.4, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx + 12, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 2.2, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
+      } else if (g.multishotTimer > 0) {
+        g.bullets.push({ x: bx - 8, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: -1.2, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 0, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
+        g.bullets.push({ x: bx + 8, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 1.2, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
       } else {
-        g.bullets.push({ x: bx, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 0, vy: -8, owner: 'player', isPiercing });
+        g.bullets.push({ x: bx, y: by, width: BULLET_SIZE, height: BULLET_SIZE, vx: 0, vy: -8, owner: 'player', isPiercing, damage: baseDamage });
       }
       audioService.playShoot();
       g.lastShootTime = now;
@@ -459,7 +588,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         (e.type === 'tank' ? COLORS.GRAY :
         (e.type === 'midboss' ? COLORS.ORANGE :
         (e.type === 'sentry' ? COLORS.BLUE :
-        (e.type === 'sweeper' ? COLORS.GREEN : COLORS.RED))))));
+        (e.type === 'sweeper' ? COLORS.GREEN :
+        (e.type === 'warden' ? COLORS.PURPLE :
+        (e.type === 'rusher' ? COLORS.YELLOW : COLORS.RED))))))));
       ctx.fillRect(e.x, e.y, e.width, e.height);
       
       if (e.type === 'boss') {
@@ -476,6 +607,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         ctx.fillStyle = COLORS.RED;
         ctx.fillRect(e.x + 8, e.y + e.height - 10, e.width - 16, 4);
       }
+      if (e.type === 'warden') {
+        ctx.strokeStyle = COLORS.CYAN;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(e.x + 2, e.y + 2, e.width - 4, e.height - 4);
+      }
+      if (e.type === 'rusher') {
+        ctx.fillStyle = COLORS.WHITE;
+        ctx.fillRect(e.x + 4, e.y + 4, e.width - 8, 3);
+      }
     });
 
     g.powerUps.forEach(p => {
@@ -484,7 +624,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         (p.type === 'bomb' ? COLORS.ORANGE :
         (p.type === 'multishot' ? COLORS.YELLOW :
         (p.type === 'coolant' ? COLORS.BLUE :
-        (p.type === 'pierce' ? COLORS.MAGENTA : COLORS.PURPLE)))));
+        (p.type === 'pierce' ? COLORS.MAGENTA :
+        (p.type === 'slow' ? COLORS.PURPLE :
+        (p.type === 'rapid' ? COLORS.RED :
+        (p.type === 'spread' ? COLORS.YELLOW :
+        (p.type === 'laser' ? COLORS.CYAN :
+        (p.type === 'magnet' ? COLORS.GREEN :
+        COLORS.ORANGE))))))))));
       ctx.fillStyle = color;
       ctx.fillRect(p.x, p.y, p.width, p.height);
       ctx.strokeStyle = COLORS.WHITE;
@@ -538,7 +684,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
     return () => cancelAnimationFrame(frameId);
   }, [update, draw]);
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const updatePlayerXFromPointer = (e: React.PointerEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = ((e.clientX - rect.left) / rect.width) * SCREEN_WIDTH;
@@ -555,8 +701,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
           {coolantActive && <span className="text-blue-400 text-[8px] animate-pulse">COOLANT</span>}
           {pierceActive && <span className="text-fuchsia-400 text-[8px] animate-pulse">PIERCE</span>}
           {slowActive && <span className="text-purple-400 text-[8px] animate-pulse">SLOW</span>}
+          {rapidActive && <span className="text-red-400 text-[8px] animate-pulse">RAPID</span>}
+          {spreadActive && <span className="text-yellow-300 text-[8px] animate-pulse">SPREAD</span>}
+          {laserActive && <span className="text-cyan-300 text-[8px] animate-pulse">LASER</span>}
+          {magnetActive && <span className="text-green-400 text-[8px] animate-pulse">MAGNET</span>}
+          {overdriveActive && <span className="text-orange-400 text-[8px] animate-pulse">OVERDRIVE</span>}
           <div className="flex gap-1 ml-2">
-            {Array.from({length: Math.max(0, lives)}).map((_,i) => <span key={i} className="text-red-500">♥</span>)}
+            {Array.from({ length: Math.max(0, lives) }).map((_, i) => (
+              <span key={i} className="text-red-500">{'\u2665'}</span>
+            ))}
           </div>
         </div>
       </div>
@@ -573,13 +726,59 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ currentLevelIndex, onGameOver, 
         </div>
       </div>
 
-      <canvas 
-        ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} 
-        className="w-full max-w-[400px] aspect-[2/3] border-4 border-zinc-800 bg-black touch-none cursor-none shadow-[0_0_20px_rgba(0,0,0,0.5)]"
-        onPointerMove={handlePointerMove}
-        onPointerDown={() => { audioService.init(); gameRef.current.isShooting = true; gameRef.current.shootStartTime = Date.now(); }}
+      <button
+        className="absolute top-24 left-1/2 -translate-x-1/2 z-30 px-6 py-3 bg-red-600/90 border-2 border-red-300 text-[10px] tracking-[0.2em] uppercase shadow-[0_0_12px_rgba(255,65,54,0.6)] active:translate-y-[1px] active:bg-red-500 select-none"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          audioService.init();
+          const g = gameRef.current;
+          g.isShooting = true;
+          g.shootStartTime = Date.now();
+        }}
         onPointerUp={() => { gameRef.current.isShooting = false; }}
-      />
+        onPointerLeave={() => { gameRef.current.isShooting = false; }}
+        onPointerCancel={() => { gameRef.current.isShooting = false; }}
+        aria-label="Shoot"
+      >
+        FIRE
+      </button>
+
+      <div className="relative w-full max-w-[400px]">
+        <div className="absolute inset-0 scanlines pointer-events-none z-20" />
+        <canvas 
+          ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} 
+          className="w-full aspect-[2/3] border-4 border-zinc-800 bg-black touch-none cursor-none shadow-[0_0_20px_rgba(0,0,0,0.5)] arcade-frame"
+          onPointerDown={(e) => {
+            const g = gameRef.current;
+            g.movePointerId = e.pointerId;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            updatePlayerXFromPointer(e);
+          }}
+          onPointerMove={(e) => {
+            const g = gameRef.current;
+            if (g.movePointerId === null) {
+              if (e.pointerType === 'mouse') updatePlayerXFromPointer(e);
+              return;
+            }
+            if (g.movePointerId === e.pointerId) updatePlayerXFromPointer(e);
+          }}
+          onPointerUp={(e) => {
+            const g = gameRef.current;
+            if (g.movePointerId === e.pointerId) g.movePointerId = null;
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }}
+          onPointerLeave={(e) => {
+            const g = gameRef.current;
+            if (g.movePointerId === e.pointerId) g.movePointerId = null;
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }}
+          onPointerCancel={(e) => {
+            const g = gameRef.current;
+            if (g.movePointerId === e.pointerId) g.movePointerId = null;
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }}
+        />
+      </div>
     </div>
   );
 };

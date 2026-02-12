@@ -3,9 +3,9 @@ const CACHE_NAME = 'overheat-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './index.css',
   './manifest.json',
-  './assets/logo.png',
-  'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'
+  './assets/logo.png'
 ];
 
 self.addEventListener('install', (event) => {

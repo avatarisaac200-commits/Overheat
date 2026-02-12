@@ -44,7 +44,7 @@ export interface StoryLevel {
 export const STORY_LEVELS: StoryLevel[] = [
   {
     title: "Sector 01: Ember Boot",
-    intro: "The city-core wakes in a fever. You are the only hotfix drone left. Stabilize the boot grid and keep your heat line clean or the chassis cracks.",
+    intro: "The city-core coughs awake, heat alarms already screaming. You are the last hotfix drone on the grid. Tap fire, cool, and keep the chassis intact.",
     waves: [
       { type: 'orb', count: 10, spawnInterval: 55 },
       { type: 'diver', count: 8, spawnInterval: 50 },
@@ -55,7 +55,7 @@ export const STORY_LEVELS: StoryLevel[] = [
   },
   {
     title: "Sector 02: Trace Cascade",
-    intro: "Helix, the thermal overseer, tags your wake. Sentries line the ducts. Tap fire, cool, then surge or the shell blooms.",
+    intro: "Helix, the thermal overseer, tags your wake. Sentries line the ducts and spike your heat window. Tap, release, breathe.",
     waves: [
       { type: 'sentry', count: 10, spawnInterval: 52 },
       { type: 'orb', count: 12, spawnInterval: 48 },
@@ -66,7 +66,7 @@ export const STORY_LEVELS: StoryLevel[] = [
   },
   {
     title: "Sector 03: Split-Lattice",
-    intro: "The lattice fractures into swarm logic. Cluster cores split on impact and mini-cells flank your cooling lanes.",
+    intro: "The lattice fractures into swarm logic. Cluster cores split on impact and mini-cells collapse your lanes.",
     waves: [
       { type: 'cluster', count: 12, spawnInterval: 50 },
       { type: 'orb', count: 16, spawnInterval: 45 },
@@ -88,10 +88,11 @@ export const STORY_LEVELS: StoryLevel[] = [
   },
   {
     title: "Sector 05: Flux Rain",
-    intro: "Thermal storms shake the mid-core. The grid flickers, and your vents lag. Grab coolant and punch through.",
+    intro: "Thermal storms shake the mid-core. The grid flickers, vents lag, and Warden arrays lock the lanes.",
     waves: [
       { type: 'orb', count: 20, spawnInterval: 42 },
-      { type: 'sentry', count: 14, spawnInterval: 46 },
+      { type: 'sentry', count: 12, spawnInterval: 46 },
+      { type: 'warden', count: 8, spawnInterval: 56 },
       { type: 'midboss', count: 1, spawnInterval: 76 },
       { type: 'cluster', count: 10, spawnInterval: 50 },
       { type: 'diver', count: 12, spawnInterval: 44 }
@@ -101,7 +102,8 @@ export const STORY_LEVELS: StoryLevel[] = [
     title: "Sector 06: Coldglass Vault",
     intro: "A sealed vault of frozen cores. Helix tries to lock the doors behind you. The chill helps, but the guard swarm is thicker.",
     waves: [
-      { type: 'sweeper', count: 18, spawnInterval: 40 },
+      { type: 'sweeper', count: 16, spawnInterval: 40 },
+      { type: 'rusher', count: 10, spawnInterval: 52 },
       { type: 'midboss', count: 1, spawnInterval: 74 },
       { type: 'orb', count: 22, spawnInterval: 40 },
       { type: 'shooter', count: 16, spawnInterval: 44 },
@@ -110,11 +112,12 @@ export const STORY_LEVELS: StoryLevel[] = [
   },
   {
     title: "Sector 07: Heavy Logic",
-    intro: "Armor cores roll in. Tanks stack in columns while sentries rain on your heat gauge. Find a rhythm or melt out.",
+    intro: "Armor cores roll in. Tanks stack in columns while sentries rake your heat gauge. Find a rhythm or melt out.",
     waves: [
       { type: 'tank', count: 22, spawnInterval: 54 },
       { type: 'midboss', count: 1, spawnInterval: 72 },
-      { type: 'sentry', count: 18, spawnInterval: 44 },
+      { type: 'sentry', count: 16, spawnInterval: 44 },
+      { type: 'warden', count: 10, spawnInterval: 58 },
       { type: 'diver', count: 16, spawnInterval: 42 },
       { type: 'orb', count: 18, spawnInterval: 40 }
     ]
@@ -127,7 +130,8 @@ export const STORY_LEVELS: StoryLevel[] = [
       { type: 'midboss', count: 1, spawnInterval: 70 },
       { type: 'diver', count: 18, spawnInterval: 40 },
       { type: 'sweeper', count: 16, spawnInterval: 42 },
-      { type: 'shooter', count: 16, spawnInterval: 44 }
+      { type: 'shooter', count: 16, spawnInterval: 44 },
+      { type: 'rusher', count: 12, spawnInterval: 50 }
     ]
   },
   {
@@ -138,18 +142,20 @@ export const STORY_LEVELS: StoryLevel[] = [
       { type: 'midboss', count: 1, spawnInterval: 68 },
       { type: 'shooter', count: 18, spawnInterval: 44 },
       { type: 'sentry', count: 16, spawnInterval: 42 },
+      { type: 'warden', count: 10, spawnInterval: 56 },
       { type: 'diver', count: 18, spawnInterval: 40 },
       { type: 'orb', count: 22, spawnInterval: 38 }
     ]
   },
   {
     title: "Sector 10: Helix Crown",
-    intro: "Helix manifests as a core emperor. It cycles through three thermal phases and spawns watchers. Break the crown or burn.",
+    intro: "Helix manifests as a core emperor. It cycles through three thermal phases, spawns watchers, and compresses your heat window. Break the crown or burn.",
     waves: [
       { type: 'sentry', count: 14, spawnInterval: 40 },
       { type: 'sweeper', count: 16, spawnInterval: 38 },
       { type: 'midboss', count: 1, spawnInterval: 66 },
       { type: 'cluster', count: 12, spawnInterval: 42 },
+      { type: 'warden', count: 10, spawnInterval: 52 },
       { type: 'boss', count: 1 }
     ]
   }

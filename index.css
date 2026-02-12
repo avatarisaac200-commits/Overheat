@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('./assets/fonts/PressStart2P-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Global baseline to match existing styling */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #000;
+  font-family: 'Press Start 2P', cursive;
+  user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
+
+#root {
+  height: 100vh;
+  height: -webkit-fill-available;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoom-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-in-from-bottom {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes boot-flicker {
+  0% { opacity: 0.4; }
+  20% { opacity: 1; }
+  40% { opacity: 0.7; }
+  60% { opacity: 1; }
+  80% { opacity: 0.85; }
+  100% { opacity: 1; }
+}
+
+@keyframes boot-bar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+@keyframes glitch {
+  0% { text-shadow: 2px 0 #ff4136, -2px 0 #00e5ff; }
+  20% { text-shadow: -2px 0 #ff4136, 2px 0 #00e5ff; }
+  40% { text-shadow: 2px 1px #ff4136, -2px -1px #00e5ff; }
+  60% { text-shadow: -2px -1px #ff4136, 2px 1px #00e5ff; }
+  80% { text-shadow: 1px 0 #ff4136, -1px 0 #00e5ff; }
+  100% { text-shadow: 0 0 #ff4136, 0 0 #00e5ff; }
+}
+
+.animate-fade-in {
+  animation: fade-in 600ms ease both;
+}
+
+.animate-in {
+  --anim-a: fade-in;
+  --anim-b: none;
+  --anim-dur: 300ms;
+  animation-name: var(--anim-a), var(--anim-b);
+  animation-duration: var(--anim-dur), var(--anim-dur);
+  animation-fill-mode: both, both;
+  animation-timing-function: ease-out, ease-out;
+}
+
+.fade-in { --anim-a: fade-in; }
+.zoom-in { --anim-b: zoom-in; }
+.slide-in-from-bottom { --anim-b: slide-in-from-bottom; }
+.duration-300 { --anim-dur: 300ms; }
+.duration-500 { --anim-dur: 500ms; }
+.duration-700 { --anim-dur: 700ms; }
+
+.boot-flicker {
+  animation: boot-flicker 900ms ease-in-out both;
+}
+
+.boot-bar {
+  animation: boot-bar 900ms ease-out both;
+}
+
+.glitch-text {
+  animation: glitch 1.1s infinite;
+}
+
+.arcade-bg {
+  background:
+    radial-gradient(1200px 600px at 10% 20%, rgba(255, 65, 54, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 90% 20%, rgba(0, 229, 255, 0.14), transparent 65%),
+    linear-gradient(180deg, #0b0b0b 0%, #050505 60%, #000 100%);
+}
+
+.scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.04) 1px,
+    rgba(0, 0, 0, 0.02) 2px,
+    rgba(0, 0, 0, 0.02) 3px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.4;
+}
+
+.vignette {
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 100%);
+}
+
+.panel-card {
+  background: rgba(8, 8, 10, 0.78);
+  border: 1px solid rgba(255, 65, 54, 0.25);
+  box-shadow: 0 0 25px rgba(255, 65, 54, 0.15), inset 0 0 18px rgba(0, 229, 255, 0.08);
+}
+
+.arcade-cta {
+  box-shadow: 0 0 18px rgba(255, 65, 54, 0.5);
+}
+
+.arcade-frame {
+  box-shadow:
+    0 0 0 2px rgba(255, 65, 54, 0.3) inset,
+    0 0 24px rgba(255, 65, 54, 0.25);
+}

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">overheat</string>
+    <string name="title_activity_main">overheat</string>
+    <string name="package_name">com.renzixxcodes.overheat</string>
+    <string name="custom_url_scheme">com.renzixxcodes.overheat</string>
+    <string name="admob_app_id">ca-app-pub-9074468231818039~5670323445</string>
+</resources>
